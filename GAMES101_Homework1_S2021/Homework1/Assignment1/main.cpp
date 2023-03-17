@@ -4,9 +4,9 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
+// 生成V矩阵
 constexpr double MY_PI = 3.1415926;
 
-// 生成V矩阵
 Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 {
     Eigen::Matrix4f view = Eigen::Matrix4f::Identity();
@@ -66,6 +66,7 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
     // TODO: Implement this function
     // Create the projection matrix for the given parameters.
     // Then return it.
+    // 疑问：这里为什么是反着乘的矩阵
     projection = per2ortho * translate_ortho * scale_ortho * projection;
 
     return projection;
@@ -89,10 +90,13 @@ int main(int argc, const char **argv)
 
     rst::rasterizer r(700, 700);
 
+    // 摄像机位置
     Eigen::Vector3f eye_pos = {0, 0, 5};
 
+    // 三角形顶点位置
     std::vector<Eigen::Vector3f> pos{{2, 0, -2}, {0, 2, -2}, {-2, 0, -2}};
 
+    // 索引
     std::vector<Eigen::Vector3i> ind{{0, 1, 2}};
 
     auto pos_id = r.load_positions(pos);

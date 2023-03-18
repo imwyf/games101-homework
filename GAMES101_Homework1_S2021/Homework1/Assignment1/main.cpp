@@ -22,18 +22,43 @@ Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
     return view;
 }
 
+// 扩展作业：绕任意过原点的轴的旋转变换矩阵。
+Eigen::Matrix4f get_rotation(Vector3f axis, float angle)
+{
+    // 将轴向量扩展成齐次坐标
+    axis = axis.normalized(); // 记得先标准化
+    Vector4f n = Vector4f(axis.x(), axis.y(), axis.z(), 1.0f);
+
+    Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
+    Eigen::Matrix4f translate;
+    translate << 0, -n.z(), n.y(), 0,
+        n.z(), 0, -n.x(), 0,
+        -n.y(), n.x(), 0, 0,
+        0, 0, 0, 1;
+    model = cos(angle) * model + (1 - cos(angle)) * (n * n.transpose()) + sin(angle) * translate;
+
+    return model;
+}
+
 // 生成M矩阵
 Eigen::Matrix4f get_model_matrix(float rotation_angle)
 {
+    // 旋转轴
+    Vector3f axis(0, 0, 1);
     Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
     Eigen::Matrix4f translate;
-    translate << cos(rotation_angle), -sin(rotation_angle), 0, 0,
-        sin(rotation_angle), cos(rotation_angle), 0, 0,
+    // 注意：rotation_angle是角度，要把它变化成弧度
+    float angle = rotation_angle / 180.0f * MY_PI;
+
+    /*
+    // 绕z轴旋转
+    translate << cos(angle), -sin(angle), 0, 0,
+        sin(angle), cos(angle), 0, 0,
         0, 0, 1, 0,
         0, 0, 0, 1;
-    // TODO: Implement this function
-    // Create the model matrix for rotating the triangle around the Z axis.
-    // Then return it.
+    */
+
+    translate = get_rotation(axis, angle);
     model = translate * model;
 
     return model;
@@ -43,29 +68,28 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle)
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
                                       float zNear, float zFar)
 {
-    // Students will implement this function
-
     Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
     Eigen::Matrix4f per2ortho, translate_ortho, scale_ortho;
+    // 角度化弧度
+    eye_fov = eye_fov * MY_PI / 180.0;
     // width and height and deepth_z
-    float h = zNear * tan(eye_fov);
-    float w = aspect_ratio * h;
-    float z = zNear - zFar;
+    // 传进来的zNear是长度没有负数，因此取负
+    auto top = -zNear * tan(eye_fov / 2);
+    auto right = top * aspect_ratio;
+    auto bottom = -top;
+    auto left = -right;
     per2ortho << zNear, 0, 0, 0,
         0, zNear, 0, 0,
         0, 0, zNear + zFar, -zNear * zFar,
         0, 0, 1, 0;
-    translate_ortho << 1, 0, 0, -0.5 * w,
-        0, 1, 0, -0.5 * h,
-        0, 0, 1, -0.5 * z,
+    translate_ortho << 1, 0, 0, -0.5 * (right + left),
+        0, 1, 0, -0.5 * (top + bottom),
+        0, 0, 1, -0.5 * (zNear + zFar),
         0, 0, 0, 1;
-    scale_ortho << 2 / w, 0, 0, 0,
-        0, 2 / h, 0, 0,
-        0, 0, 2 / z, 0,
+    scale_ortho << 2 / (right - left), 0, 0, 0,
+        0, 2 / (top - bottom), 0, 0,
+        0, 0, 2 / (zNear - zFar), 0,
         0, 0, 0, 1;
-    // TODO: Implement this function
-    // Create the projection matrix for the given parameters.
-    // Then return it.
     // 疑问：这里为什么是反着乘的矩阵
     projection = per2ortho * translate_ortho * scale_ortho * projection;
 

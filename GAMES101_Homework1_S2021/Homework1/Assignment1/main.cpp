@@ -25,17 +25,23 @@ Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 // 扩展作业：绕任意过原点的轴的旋转变换矩阵。
 Eigen::Matrix4f get_rotation(Vector3f axis, float angle)
 {
-    // 将轴向量扩展成齐次坐标
-    axis = axis.normalized(); // 记得先标准化
-    Vector4f n = Vector4f(axis.x(), axis.y(), axis.z(), 1.0f);
+    // 记得先标准化
+    axis = axis.normalized();
 
     Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
-    Eigen::Matrix4f translate;
-    translate << 0, -n.z(), n.y(), 0,
-        n.z(), 0, -n.x(), 0,
-        -n.y(), n.x(), 0, 0,
-        0, 0, 0, 1;
-    model = cos(angle) * model + (1 - cos(angle)) * (n * n.transpose()) + sin(angle) * translate;
+
+    Eigen::Matrix3f I = Eigen::Matrix3f::Identity();
+    Eigen::Matrix3f translate;
+    translate << 0, -axis.z(), axis.y(),
+        axis.z(), 0, -axis.x(),
+        -axis.y(), axis.x(), 0;
+    /* ---------------------------------注意---------------------------------------
+    这里是先计算出罗德里格斯旋转矩阵，再对其扩展成4x4矩阵，不要先将axis扩展成齐次坐标带入公式,因为，
+    如果先扩展，I是4阶单位矩阵，w维度上的向量是(0,0,0,1)，在公式里会乘以cos(a)，同时n*nT也会改变
+    w维（第4维）的值，使得该向量变为(0,0,0,w)，导致顶点坐标变成(x/w,y/w,z/w,1)，成倍的缩放坐标。
+    旋转矩阵只负责旋转，因此，应该保证w维向量始终为(0,0,0,1)，因此先计算三维旋转矩阵，再进行扩展。
+    ------------------------------------------------------------------------------*/
+    model.block<3, 3>(0, 0) = (cos(angle) * I + (1 - cos(angle)) * (axis * axis.transpose()) + sin(angle) * translate);
 
     return model;
 }
@@ -45,23 +51,18 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle)
 {
     // 旋转轴
     Vector3f axis(0, 0, 1);
-    Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
     Eigen::Matrix4f translate;
     // 注意：rotation_angle是角度，要把它变化成弧度
     float angle = rotation_angle / 180.0f * MY_PI;
 
-    /*
-    // 绕z轴旋转
+    /* // 绕z轴旋转
     translate << cos(angle), -sin(angle), 0, 0,
         sin(angle), cos(angle), 0, 0,
         0, 0, 1, 0,
-        0, 0, 0, 1;
-    */
+        0, 0, 0, 1; */
 
     translate = get_rotation(axis, angle);
-    model = translate * model;
-
-    return model;
+    return translate;
 }
 
 // 生成P矩阵

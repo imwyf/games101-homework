@@ -66,33 +66,44 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle)
 }
 
 // 生成P矩阵
-Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
-                                      float zNear, float zFar)
+Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float zNear, float zFar)
 {
-    Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
-    Eigen::Matrix4f per2ortho, translate_ortho, scale_ortho;
     // 角度化弧度
     eye_fov = eye_fov * MY_PI / 180.0;
-    // width and height and deepth_z
-    // 传进来的zNear是长度没有负数，因此取负
-    auto top = -zNear * tan(eye_fov / 2);
-    auto right = top * aspect_ratio;
-    auto bottom = -top;
-    auto left = -right;
-    per2ortho << zNear, 0, 0, 0,
-        0, zNear, 0, 0,
-        0, 0, zNear + zFar, -zNear * zFar,
-        0, 0, 1, 0;
-    translate_ortho << 1, 0, 0, -0.5 * (right + left),
-        0, 1, 0, -0.5 * (top + bottom),
-        0, 0, 1, -0.5 * (zNear + zFar),
-        0, 0, 0, 1;
-    scale_ortho << 2 / (right - left), 0, 0, 0,
-        0, 2 / (top - bottom), 0, 0,
-        0, 0, 2 / (zNear - zFar), 0,
-        0, 0, 0, 1;
-    // 疑问：这里为什么是反着乘的矩阵
-    projection = per2ortho * translate_ortho * scale_ortho * projection;
+
+    Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
+    // Compute l, r, b, t
+    float t = tan(eye_fov / 2) * -zNear; // 传进来的zNear是长度没有负数，因此取负
+    float r = aspect_ratio * t;
+    float l = -r;
+    float b = -t;
+
+    // Orthographic projection
+    // Translate to origin
+    Eigen::Matrix4f translate = Eigen::Matrix4f::Identity();
+    translate(0, 3) = -(r + l) / 2;
+    translate(1, 3) = -(t + b) / 2;
+    translate(2, 3) = -(zNear + zFar) / 2;
+
+    // Sclae to [-1,1]^3
+    Eigen::Matrix4f scale = Eigen::Matrix4f::Identity();
+    scale(0, 0) = 2 / (r - l);
+    scale(1, 1) = 2 / (t - b);
+    scale(2, 2) = 2 / (zNear - zFar);
+
+    // get Orthographic projection
+    Eigen::Matrix4f ortho = scale * translate;
+
+    // Perspective projection
+    Eigen::Matrix4f persp2ortho = Eigen::Matrix4f::Zero();
+    persp2ortho(0, 0) = zNear;
+    persp2ortho(1, 1) = zNear;
+    persp2ortho(2, 2) = zNear + zFar;
+    persp2ortho(2, 3) = -zNear * zFar;
+    persp2ortho(3, 2) = 1;
+
+    // get Perspective projection
+    projection = ortho * persp2ortho;
 
     return projection;
 }

@@ -76,14 +76,10 @@ namespace rst
         Eigen::Matrix4f view;
         Eigen::Matrix4f projection;
 
-        // 位置缓存：map，int->容器，里面存的是3维向量->顶点的位置向量
         std::map<int, std::vector<Eigen::Vector3f>> pos_buf;
-        // 索引缓存:
         std::map<int, std::vector<Eigen::Vector3i>> ind_buf;
 
-        // 帧缓冲：一个容器，容器里面存的是3维向量->RGB值，容器的索引即屏幕坐标(w,h)展开的值
         std::vector<Eigen::Vector3f> frame_buf;
-        // 深度缓存：
         std::vector<float> depth_buf;
         int get_index(int x, int y);
 

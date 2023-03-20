@@ -204,24 +204,16 @@ void rst::rasterizer::set_projection(const Eigen::Matrix4f &p)
 
 void rst::rasterizer::clear(rst::Buffers buff)
 {
-    /*
-    巧用位运算来控制分支执行：
-    1.Color是1，Depth是2，换成位表示Color=01，Depth=10
-    2.这样只传入Color代表执行第一种分支，只传入Depth代表执行第二种分支，传入Color|Depth代表都执行
-    3.第一种分支取第一位判断是否是1，第二种分支取第二位判断，分别判断即可
-     */
     if ((buff & rst::Buffers::Color) == rst::Buffers::Color)
     {
         std::fill(frame_buf.begin(), frame_buf.end(), Eigen::Vector3f{0, 0, 0});
     }
     if ((buff & rst::Buffers::Depth) == rst::Buffers::Depth)
     {
-        // 深度默认值是无限
         std::fill(depth_buf.begin(), depth_buf.end(), std::numeric_limits<float>::infinity());
     }
 }
 
-// 构造一个w*h的frame_buf和depth_buf
 rst::rasterizer::rasterizer(int w, int h) : width(w), height(h)
 {
     frame_buf.resize(w * h);

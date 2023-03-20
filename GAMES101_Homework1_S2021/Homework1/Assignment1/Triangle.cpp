@@ -9,7 +9,6 @@
 
 Triangle::Triangle()
 {
-    // 初始化：位置(0,0,0),颜色(0,0,0),UV(0,0)
     v[0] << 0, 0, 0;
     v[1] << 0, 0, 0;
     v[2] << 0, 0, 0;
@@ -34,7 +33,6 @@ void Triangle::setColor(int ind, float r, float g, float b)
     {
         throw std::runtime_error("Invalid color values");
     }
-    // rgb/255的效果是映射：[0,255] -> [0,1]
     color[ind] = Vector3f((float)r / 255., (float)g / 255., (float)b / 255.);
     return;
 }

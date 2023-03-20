@@ -9,7 +9,6 @@
 
 using namespace Eigen;
 
-// 硬编码的三角形 : 意味着无法通过命令行改变三角形的颜色和位置。
 class Triangle
 {
   public:

@@ -3,7 +3,6 @@
 // Created by goksu on 4/6/19.
 //
 
-#include<tuple>
 #include <algorithm>
 #include <vector>
 #include "rasterizer.hpp"
@@ -49,7 +48,7 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
     return Vector4f(v3.x(), v3.y(), v3.z(), w);
 }
 
-static bool insideTriangle(int x, int y, const Vector3f* _v)
+static bool insideTriangle(float x, float y, const Vector3f* _v)
 {   
     // 由三角形的三个顶点求三个边的向量
     Vector3f p0p1,p1p2,p2p0;
@@ -58,7 +57,7 @@ static bool insideTriangle(int x, int y, const Vector3f* _v)
     p2p0 = _v[0]-_v[2];
 
     // 扩展点p，取中心坐标
-    Vector3f p(x+0.5,y+0.5,1.0f);
+    Vector3f p(x,y,1.0f);
     // 求三个叉积的z分量
     float z1 = p0p1.cross(p-_v[0]).z();
     float z2 = p1p2.cross(p-_v[1]).z();
@@ -126,6 +125,31 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
     }
 }
 
+// MSAA，遍历一个像素内部的超采样点，判断其是否满足1.深度更小 2.在三角形内，返回满足的超采样像素个数。本质上这是将1个像素点变成4个像素点，做4次深度判断、位置判断，因此深度缓存和颜色缓存4倍大小，例子：depth_buf[0]、depth_buf[1]、depth_buf[2]、depth_buf[3]对应的是在(0,0)的像素的4个采样点的深度。n、m表示采样点矩阵，即1个像素一共有n*m个采样点，n是行数，m是列数
+int rst::rasterizer::MSAA(int x, int y, const Triangle& t, int n, int m, float z)
+{
+    float size_x = 1.0/n; // the size_x of every super sample pixel
+    float size_y = 1.0/m;
+
+    int blocksinTriangle = 0;
+    // 遍历n*m个采样点
+    for(int i=0; i<n; ++i) 
+        for(int j=0; j<m; ++j) 
+        {
+            if (z<MSAA_depth_buf[get_index(x,y)*4 + i*n + j] && insideTriangle(x+i*size_x, y+j*size_y, t.v)) 
+            {
+                // 写入深度缓存
+                MSAA_depth_buf[get_index(x,y)*4 + i*n +j] = z;
+                // 写入颜色缓存
+                MSAA_frame_buf[get_index(x,y)*4 + i*n +j] = t.getColor();
+                blocksinTriangle ++;
+            }
+        }
+    
+    return blocksinTriangle;
+}
+
+
 //Screen space rasterization
 void rst::rasterizer::rasterize_triangle(const Triangle& t) 
 {
@@ -137,44 +161,29 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t)
     minY = std::min(v[0].y(), std::min(v[1].y(), v[2].y()));
     maxY = std::max(v[0].y(), std::max(v[1].y(), v[2].y()));
 
-    // 遍历
+    // 设置采样点个数
+    int n = 2;
+    int m = 2;
+    // 遍历每个像素
     for(int y = minY; y <= maxY; y++)
         for (int x = minX; x <=maxX ; x++)
         {
             // 扩展作业：MSAA
-            // 每个像素内部维护一个数组sample_list，对里面的每个采样点都判断一次在不在三角形内，按照百分比来给予灰度值
-            auto ssList = genSSList(x,y);
-            int judge = 0;
-            // 对每个采样点用z_buffer
-            for (int i=0; i<ssList.size(); i++)
+            int blockinTriangle = 0;
+            auto alpha = std::get<0>(computeBarycentric2D(x, y, t.v));
+            auto beta = std::get<1>(computeBarycentric2D(x, y, t.v));
+            auto gamma = std::get<2>(computeBarycentric2D(x, y, t.v));
+            float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+            float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+            z_interpolated *= w_reciprocal;
+
+            // 当满足条件的采样点>0时，需要对这个像素着色
+            if ((blockinTriangle = MSAA(x, y, t, n, m, z_interpolated)) > 0) 
             {
-                if (insideTriangle(ssList[i].x(), ssList[i].y(), t.v))
-                {
-                    auto tup = computeBarycentric2D(ssList[i].x(), ssList[i].y(), t.v);
-                    float alpha;
-                    float beta;
-                    float gamma;
-                    std::tie(alpha, beta, gamma) = tup;
-                    float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
-                    float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
-                    z_interpolated *= w_reciprocal;
-                    if (super_depth_buf[get_super_index(x*2 + i % 2, y*2 + i / 2)] > z_interpolated)
-                    {
-                        judge = 1;
-                        //深度存入缓存
-                        super_depth_buf[get_super_index(x*2 + i % 2, y*2 + i / 2)] = z_interpolated;
-                        //颜色存入缓存
-                        super_frame_buf[get_super_index(x*2 + i % 2, y*2 + i / 2)] = t.getColor();
-                    }
-                }
-            }
-            if (judge)
-            //若像素的四个样本中有一个通过了深度测试，就需要对该像素进行着色，因为有一个通过就说明有颜色，就需要着色。
-            {
-                Vector3f point = {x,y,0 };
-                Vector3f color = (super_frame_buf[get_super_index(x*2 , y*2)]+ super_frame_buf[get_super_index(x*2+1, y*2)]+ super_frame_buf[get_super_index(x*2, y*2+1)]+ super_frame_buf[get_super_index(x*2+1, y*2+1)])/4;
-                //着色
-                set_pixel(point, color);
+                int idx = get_index(x, y);
+                // 混合所有采样点的颜色
+                Vector3f mixColor = (MSAA_frame_buf[idx*4]+MSAA_frame_buf[idx*4+1]+MSAA_frame_buf[idx*4+2]+MSAA_frame_buf[idx*4+3])/4.0;
+                set_pixel(Eigen::Vector3f(x, y, z_interpolated), mixColor);
             }
         }
 }
@@ -199,12 +208,12 @@ void rst::rasterizer::clear(rst::Buffers buff)
     if ((buff & rst::Buffers::Color) == rst::Buffers::Color)
     {
         std::fill(frame_buf.begin(), frame_buf.end(), Eigen::Vector3f{0, 0, 0});
-        std::fill(super_frame_buf.begin(), super_frame_buf.end(), Eigen::Vector3f{ 0, 0, 0 });
+        std::fill(MSAA_frame_buf.begin(), MSAA_frame_buf.end(), Eigen::Vector3f{ 0, 0, 0 });
     }
     if ((buff & rst::Buffers::Depth) == rst::Buffers::Depth)
     {
         std::fill(depth_buf.begin(), depth_buf.end(), std::numeric_limits<float>::infinity());
-        std::fill(super_depth_buf.begin(), super_depth_buf.end(), std::numeric_limits<float>::infinity());
+        std::fill(MSAA_depth_buf.begin(), MSAA_depth_buf.end(), std::numeric_limits<float>::infinity());
     }
 }
 
@@ -212,8 +221,8 @@ rst::rasterizer::rasterizer(int w, int h) : width(w), height(h)
 {
     frame_buf.resize(w * h);
     depth_buf.resize(w * h);
-    super_frame_buf.resize(w * h * 4);
-    super_depth_buf.resize(w * h * 4);
+    MSAA_frame_buf.resize(w * h * 4);
+    MSAA_depth_buf.resize(w * h * 4);
 }
 
 int rst::rasterizer::get_index(int x, int y)

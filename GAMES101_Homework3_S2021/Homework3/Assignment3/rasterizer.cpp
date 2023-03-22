@@ -186,6 +186,7 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
             (view * model * t->v[1]),
             (view * model * t->v[2])};
 
+        // 没有经过P矩阵的,viewspace的顶点坐标
         std::array<Eigen::Vector3f, 3> viewspace_pos;
 
         std::transform(mm.begin(), mm.end(), viewspace_pos.begin(), [](auto &v)
@@ -203,7 +204,9 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
             vec.z() /= vec.w();
         }
 
+        // MV矩阵求逆再转置? -> TODO:why
         Eigen::Matrix4f inv_trans = (view * model).inverse().transpose();
+        // n[] is view space normal of the Vertexs
         Eigen::Vector4f n[] = {
             inv_trans * to_vec4(t->normal[0], 0.0f),
             inv_trans * to_vec4(t->normal[1], 0.0f),

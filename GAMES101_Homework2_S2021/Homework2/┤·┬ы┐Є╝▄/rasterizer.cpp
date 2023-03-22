@@ -9,16 +9,6 @@
 #include <opencv2/opencv.hpp>
 #include <math.h>
 
-// 生成采样点
-std::vector<Eigen::Vector3f> genSSList(int x,int y)
-{
-    Eigen::Vector3f a(x,y,1.0f);
-    Eigen::Vector3f b(x,y+0.5,1.0f);
-    Eigen::Vector3f c(x+0.5,y,1.0f);
-    Eigen::Vector3f d(x+0.5,y+0.5,1.0f);
-    return {a,b,c,d};
-}
-
 rst::pos_buf_id rst::rasterizer::load_positions(const std::vector<Eigen::Vector3f> &positions)
 {
     auto id = get_next_id();

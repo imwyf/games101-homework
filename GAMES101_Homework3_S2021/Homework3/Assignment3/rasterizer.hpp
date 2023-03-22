@@ -98,7 +98,7 @@ namespace rst
 
         int normal_id = -1;
 
-        // 位置缓存：map，int->容器，里面存的是3维向量->顶点的位置向量
+        // 位置缓存:map，int->容器，里面存的是3维向量->顶点的位置向量
         std::map<int, std::vector<Eigen::Vector3f>> pos_buf;
         // 索引缓存:map，int->容器，存的是一个3维整型向量，代表一个图形的顶点索引，因此一个向量代表一个图形，容器的容量是需要渲染的图形个数
         std::map<int, std::vector<Eigen::Vector3i>> ind_buf;

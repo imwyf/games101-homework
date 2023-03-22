@@ -49,7 +49,42 @@ Eigen::Matrix4f get_model_matrix(float angle)
 
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float zNear, float zFar)
 {
-    // TODO: Use the same projection matrix from the previous assignments
+    eye_fov = eye_fov * MY_PI / 180.0;
+    Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
+    // Compute l, r, b, t
+    float t = tan(eye_fov / 2) * -zNear;
+    float r = aspect_ratio * t;
+    float l = -r;
+    float b = -t;
+
+    // Orthographic projection
+    // Translate to origin
+    Eigen::Matrix4f translate = Eigen::Matrix4f::Identity();
+    translate(0, 3) = -(r + l) / 2;
+    translate(1, 3) = -(t + b) / 2;
+    translate(2, 3) = -(zNear + zFar) / 2;
+
+    // Sclae to [-1,1]^3
+    Eigen::Matrix4f scale = Eigen::Matrix4f::Identity();
+    scale(0, 0) = 2 / (r - l);
+    scale(1, 1) = 2 / (t - b);
+    scale(2, 2) = 2 / (zNear - zFar);
+
+    // get Orthographic projection
+    Eigen::Matrix4f ortho = scale * translate;
+
+    // Perspective projection
+    Eigen::Matrix4f persp2ortho = Eigen::Matrix4f::Zero();
+    persp2ortho(0, 0) = zNear;
+    persp2ortho(1, 1) = zNear;
+    persp2ortho(2, 2) = zNear + zFar;
+    persp2ortho(2, 3) = -zNear * zFar;
+    persp2ortho(3, 2) = 1;
+
+    // get Perspective projection
+    projection = ortho * persp2ortho;
+
+    return projection;
 }
 
 Eigen::Vector3f vertex_shader(const vertex_shader_payload &payload)
@@ -228,6 +263,7 @@ Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload &payload)
 
 int main(int argc, const char **argv)
 {
+    // 需要渲染的三角形集合
     std::vector<Triangle *> TriangleList;
 
     float angle = 140.0;
@@ -239,13 +275,16 @@ int main(int argc, const char **argv)
 
     // Load .obj File
     bool loadout = Loader.LoadFile("../models/spot/spot_triangulated_good.obj");
+    // 遍历这个模型的每个三角形
     for (auto mesh : Loader.LoadedMeshes)
     {
+        // 遍历一个三角形的顶点
         for (int i = 0; i < mesh.Vertices.size(); i += 3)
         {
             Triangle *t = new Triangle();
             for (int j = 0; j < 3; j++)
             {
+                // 设置三角形的顶点坐标、法线、纹理坐标
                 t->setVertex(j, Vector4f(mesh.Vertices[i + j].Position.X, mesh.Vertices[i + j].Position.Y, mesh.Vertices[i + j].Position.Z, 1.0));
                 t->setNormal(j, Vector3f(mesh.Vertices[i + j].Normal.X, mesh.Vertices[i + j].Normal.Y, mesh.Vertices[i + j].Normal.Z));
                 t->setTexCoord(j, Vector2f(mesh.Vertices[i + j].TextureCoordinate.X, mesh.Vertices[i + j].TextureCoordinate.Y));
@@ -259,6 +298,7 @@ int main(int argc, const char **argv)
     auto texture_path = "hmap.jpg";
     r.set_texture(Texture(obj_path + texture_path));
 
+    // 加载Shader用到的参数,参数存在fragment_shader_payload中
     std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = phong_fragment_shader;
 
     if (argc >= 2)
@@ -310,6 +350,7 @@ int main(int argc, const char **argv)
         r.set_view(get_view_matrix(eye_pos));
         r.set_projection(get_projection_matrix(45.0, 1, 0.1, 50));
 
+        // 渲染开始
         r.draw(TriangleList);
         cv::Mat image(700, 700, CV_32FC3, r.frame_buffer().data());
         image.convertTo(image, CV_8UC3, 1.0f);

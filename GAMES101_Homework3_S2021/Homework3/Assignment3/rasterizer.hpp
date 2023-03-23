@@ -60,7 +60,7 @@ namespace rst
     class rasterizer
     {
     public:
-        rasterizer(int w, int h);
+        rasterizer(int w, int h); // 构造一个w*h的frame_buf和depth_buf
         pos_buf_id load_positions(const std::vector<Eigen::Vector3f> &positions);
         ind_buf_id load_indices(const std::vector<Eigen::Vector3i> &indices);
         col_buf_id load_colors(const std::vector<Eigen::Vector3f> &colors);
@@ -114,7 +114,7 @@ namespace rst
         std::vector<Eigen::Vector3f> frame_buf;
         // 深度缓存
         std::vector<float> depth_buf;
-        int get_index(int x, int y);
+        int get_index(int x, int y); // 从二维数组索引展开成一维数组索引
 
         int width, height;
 

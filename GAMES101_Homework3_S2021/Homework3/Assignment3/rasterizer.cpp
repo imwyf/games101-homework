@@ -315,7 +315,6 @@ void rst::rasterizer::clear(rst::Buffers buff)
     }
 }
 
-// 构造一个w*h的frame_buf和depth_buf
 rst::rasterizer::rasterizer(int w, int h) : width(w), height(h)
 {
     frame_buf.resize(w * h);
@@ -332,7 +331,6 @@ int rst::rasterizer::get_index(int x, int y)
 void rst::rasterizer::set_pixel(const Vector2i &point, const Eigen::Vector3f &color)
 {
     // old index: auto ind = point.y() + point.x() * width;
-    // 从二维数组索引展开成一维数组索引
     int ind = (height - point.y()) * width + point.x();
     frame_buf[ind] = color;
 }

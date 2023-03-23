@@ -46,12 +46,12 @@ static bool insideTriangle(float x, float y, const Vector3f* _v)
     p1p2 = _v[2]-_v[1];
     p2p0 = _v[0]-_v[2];
 
-    // 扩展点p，取中心坐标
-    Vector3f p(x,y,1.0f);
+    // 扩展点Q，取中心坐标
+    Vector3f Q(x,y,1.0f);
     // 求三个叉积的z分量
-    float z1 = p0p1.cross(p-_v[0]).z();
-    float z2 = p1p2.cross(p-_v[1]).z();
-    float z3 = p2p0.cross(p-_v[2]).z();
+    float z1 = p0p1.cross(Q-_v[0]).z();
+    float z2 = p1p2.cross(Q-_v[1]).z();
+    float z3 = p2p0.cross(Q-_v[2]).z();
     // 判断是否同号,signbit()：<0-> return 1
     // 这里注意不要用三个连等，if(a==b==c)这种语句，c++不支持
     if(signbit(z1) == signbit(z2) && signbit(z2) == signbit(z3)) return true;
@@ -118,13 +118,13 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
 // MSAA，遍历一个像素内部的超采样点，判断其是否满足1.深度更小 2.在三角形内，返回满足的超采样像素个数。本质上这是将1个像素点变成4个像素点，做4次深度判断、位置判断，因此深度缓存和颜色缓存4倍大小，例子：depth_buf[0]、depth_buf[1]、depth_buf[2]、depth_buf[3]对应的是在(0,0)的像素的4个采样点的深度。n、m表示采样点矩阵，即1个像素一共有n*m个采样点，n是行数，m是列数
 int rst::rasterizer::MSAA(int x, int y, const Triangle& t, int n, int m, float z)
 {
-    float size_x = 1.0/n; // the size_x of every super sample pixel
-    float size_y = 1.0/m;
+    float size_x = 1.0/n+1; // the size_x of every super sample pixel
+    float size_y = 1.0/m+1;
 
     int blocksinTriangle = 0;
     // 遍历n*m个采样点
-    for(int i=0; i<n; ++i) 
-        for(int j=0; j<m; ++j) 
+    for(int i=1; i<=n; ++i) 
+        for(int j=1; j<=m; ++j) 
         {
             if (z<MSAA_depth_buf[get_index(x,y)*4 + i*n + j] && insideTriangle(x+i*size_x, y+j*size_y, t.v)) 
             {
@@ -218,11 +218,6 @@ rst::rasterizer::rasterizer(int w, int h) : width(w), height(h)
 int rst::rasterizer::get_index(int x, int y)
 {
     return (height-1-y)*width + x;
-}
-
-int rst::rasterizer::get_super_index(int x, int y)
-{
-    return (height*2 - 1 - y) * width*2 + x;
 }
 
 void rst::rasterizer::set_pixel(const Eigen::Vector3f& point,const Eigen::Vector3f& color)

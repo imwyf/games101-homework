@@ -126,7 +126,9 @@ int rst::rasterizer::MSAA(int x, int y, const Triangle& t, int n, int m, float z
     for(int i=0; i<n; ++i) 
         for(int j=0; j<m; ++j) 
         {
-            if (z<MSAA_depth_buf[get_index(x,y)*4 + i*n + j] && insideTriangle(x+i*size_x, y+j*size_y, t.v)) 
+            float _x = x+i*size_x; // _x is the coordinate of the sample point
+            float _y = y+j*size_y;
+            if (z<MSAA_depth_buf[get_index(x,y)*4 + i*n + j] && insideTriangle(_x, _y, t.v)) 
             {
                 // 写入深度缓存
                 MSAA_depth_buf[get_index(x,y)*4 + i*n +j] = z;
@@ -135,7 +137,6 @@ int rst::rasterizer::MSAA(int x, int y, const Triangle& t, int n, int m, float z
                 blocksinTriangle ++;
             }
         }
-    
     return blocksinTriangle;
 }
 

@@ -286,15 +286,17 @@ void rst::rasterizer::rasterize_triangle(const Triangle &t, const std::array<Eig
 
                 if (z_interpolated < depth_buf[get_index(x, y)])
                 {
+                    // 插值的作用:从三个顶点的颜色,坐标,法向量,UV坐标得到整个三角形中每一个像素点的颜色,坐标,法向量,UV坐标
                     // 颜色插值
                     auto interpolated_color = interpolate(alpha, beta, gamma, t.color[0], t.color[1], t.color[2], 1);
                     // 法向量插值
                     auto interpolated_normal = interpolate(alpha, beta, gamma, t.normal[0], t.normal[1], t.normal[2], 1);
-                    // 纹理颜色插值
+                    // 纹理坐标插值
                     auto interpolated_texcoords = interpolate(alpha, beta, gamma, t.tex_coords[0], t.tex_coords[1], t.tex_coords[2], 1);
                     // 内部点位置插值
                     auto interpolated_shadingcoords = interpolate(alpha, beta, gamma, view_pos[0], view_pos[1], view_pos[2], 1);
 
+                    // 片元着色,没有去做顶点着色
                     fragment_shader_payload payload(interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);
                     payload.view_pos = interpolated_shadingcoords;
                     auto pixel_color = fragment_shader(payload);

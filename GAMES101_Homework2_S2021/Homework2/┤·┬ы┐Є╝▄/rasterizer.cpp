@@ -169,20 +169,20 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t)
             z_interpolated *= w_reciprocal;
 
             // 不使用MSAA的版本
-            /* if(z_interpolated < depth_buf[get_index(x,y)])
+            if(z_interpolated < depth_buf[get_index(x,y)] && insideTriangle(x+0.5, y+0.5, t.v))
             {
                 depth_buf[get_index(x,y)] = z_interpolated; // 更新深度
                 set_pixel(Eigen::Vector3f(x, y, z_interpolated),t.getColor()); // 设置颜色
-            } */
+            }
             
-            // 当满足条件的采样点>0时，需要对这个像素着色
+            /* // 当满足条件的采样点>0时，需要对这个像素着色
             if ((blockinTriangle = MSAA(x, y, t, n, m, z_interpolated)) > 0) 
             {
                 int idx = get_index(x, y);
                 // 混合所有采样点的颜色
                 Vector3f mixColor = (MSAA_frame_buf[idx*4]+MSAA_frame_buf[idx*4+1]+MSAA_frame_buf[idx*4+2]+MSAA_frame_buf[idx*4+3])/4.0;
                 set_pixel(Eigen::Vector3f(x, y, z_interpolated), mixColor);
-            }
+            } */
         }
 }
 

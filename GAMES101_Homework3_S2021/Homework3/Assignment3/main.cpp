@@ -123,6 +123,7 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload &payload)
     texture_color << return_color.x(), return_color.y(), return_color.z();
 
     Eigen::Vector3f ka = Eigen::Vector3f(0.005, 0.005, 0.005);
+    // 在phong shader中，这个颜色（在布林冯模型中，kd==颜色）是通过三角形顶点颜色插值出来的颜色，这里替换成了纹理贴图上的颜色
     Eigen::Vector3f kd = texture_color / 255.f;
     Eigen::Vector3f ks = Eigen::Vector3f(0.7937, 0.7937, 0.7937);
 
@@ -136,17 +137,17 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload &payload)
     float p = 150;
 
     Eigen::Vector3f color = texture_color;
-    Eigen::Vector3f point = payload.view_pos;
-    Eigen::Vector3f normal = payload.normal;
+    Eigen::Vector3f point = payload.view_pos; // shader point -> view space vertex position
+    Eigen::Vector3f normal = payload.normal;  // 通过三角形顶点法向量插值出来的法向量
 
     Eigen::Vector3f result_color = {0, 0, 0};
 
     for (auto &light : lights)
     {
-        auto v = eye_pos - point;        // 出射光方向
-        auto l = light.position - point; // 入射光方向
-        auto h = (v + l).normalized();   // 半程向量
-        auto r_square = l.dot(l);        // 距离的平方
+        auto v = eye_pos - point;                                // 出射光方向
+        auto l = light.position - point;                         // 入射光方向
+        auto r_square = l.dot(l);                                // 距离的平方
+        auto h = (v.normalized() + l.normalized()).normalized(); // 半程向量
         // cwiseProduct:实现两个向量对应分量相乘
         auto ambient = ka.cwiseProduct(amb_light_intensity);                                                                   // 环境光
         auto diffuse = kd.cwiseProduct(light.intensity / r_square) * std::max(0.0f, normal.normalized().dot(l.normalized()));  // 漫反射
@@ -172,17 +173,17 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload &payload)
 
     float p = 150;
 
-    Eigen::Vector3f color = payload.color;
-    Eigen::Vector3f point = payload.view_pos;
-    Eigen::Vector3f normal = payload.normal;
+    Eigen::Vector3f color = payload.color; // 通过三角形顶点颜色插值出来的颜色
+    Eigen::Vector3f point = payload.view_pos; // shader point -> view space vertex position
+    Eigen::Vector3f normal = payload.normal;  // 通过三角形顶点法向量插值出来的法向量
 
     Eigen::Vector3f result_color = {0, 0, 0};
     for (auto &light : lights)
     {
-        auto v = eye_pos - point;        // 出射光方向
-        auto l = light.position - point; // 入射光方向
-        auto h = (v + l).normalized();   // 半程向量
-        auto r_square = l.dot(l);        // 距离的平方
+        auto v = eye_pos - point;                                // 出射光方向
+        auto l = light.position - point;                         // 入射光方向
+        auto r_square = l.dot(l);                                // 距离的平方
+        auto h = (v.normalized() + l.normalized()).normalized(); // 半程向量
         // cwiseProduct:实现两个向量对应分量相乘
         auto ambient = ka.cwiseProduct(amb_light_intensity);                                                                   // 环境光
         auto diffuse = kd.cwiseProduct(light.intensity / r_square) * std::max(0.0f, normal.normalized().dot(l.normalized()));  // 漫反射
@@ -195,7 +196,6 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload &payload)
 
 Eigen::Vector3f displacement_fragment_shader(const fragment_shader_payload &payload)
 {
-
     Eigen::Vector3f ka = Eigen::Vector3f(0.005, 0.005, 0.005);
     Eigen::Vector3f kd = payload.color;
     Eigen::Vector3f ks = Eigen::Vector3f(0.7937, 0.7937, 0.7937);
@@ -238,12 +238,10 @@ Eigen::Vector3f displacement_fragment_shader(const fragment_shader_payload &payl
 
     for (auto &light : lights)
     {
-        auto v = eye_pos - point; // 出射光方向
-        v.normalize();
+        auto v = eye_pos - point;        // 出射光方向
         auto l = light.position - point; // 入射光方向
-        l.normalize();
-        auto h = (v + l).normalized(); // 半程向量
-        auto r_square = l.dot(l);      // 距离的平方
+        auto r_square = l.dot(l);        // 距离的平方
+        auto h = (v.normalized() + l.normalized()).normalized(); // 半程向量
         // cwiseProduct:实现两个向量对应分量相乘
         auto ambient = ka.cwiseProduct(amb_light_intensity);                                                                   // 环境光
         auto diffuse = kd.cwiseProduct(light.intensity / r_square) * std::max(0.0f, normal.normalized().dot(l.normalized()));  // 漫反射

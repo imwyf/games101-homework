@@ -168,6 +168,13 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t)
             float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
             z_interpolated *= w_reciprocal;
 
+            // 不使用MSAA的版本
+            /* if(z_interpolated < depth_buf[get_index(x,y)])
+            {
+                depth_buf[get_index(x,y)] = z_interpolated; // 更新深度
+                set_pixel(Eigen::Vector3f(x, y, z_interpolated),t.getColor()); // 设置颜色
+            } */
+            
             // 当满足条件的采样点>0时，需要对这个像素着色
             if ((blockinTriangle = MSAA(x, y, t, n, m, z_interpolated)) > 0) 
             {

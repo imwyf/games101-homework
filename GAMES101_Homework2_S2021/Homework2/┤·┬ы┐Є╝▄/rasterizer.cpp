@@ -118,13 +118,13 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
 // MSAA，遍历一个像素内部的超采样点，判断其是否满足1.深度更小 2.在三角形内，返回满足的超采样像素个数。本质上这是将1个像素点变成4个像素点，做4次深度判断、位置判断，因此深度缓存和颜色缓存4倍大小，例子：depth_buf[0]、depth_buf[1]、depth_buf[2]、depth_buf[3]对应的是在(0,0)的像素的4个采样点的深度。n、m表示采样点矩阵，即1个像素一共有n*m个采样点，n是行数，m是列数
 int rst::rasterizer::MSAA(int x, int y, const Triangle& t, int n, int m, float z)
 {
-    float size_x = 1.0/n+1; // the size_x of every super sample pixel
-    float size_y = 1.0/m+1;
+    float size_x = 1.0/n; // the size_x of every super sample pixel
+    float size_y = 1.0/m;
 
     int blocksinTriangle = 0;
     // 遍历n*m个采样点
-    for(int i=1; i<=n; ++i) 
-        for(int j=1; j<=m; ++j) 
+    for(int i=0; i<n; ++i) 
+        for(int j=0; j<m; ++j) 
         {
             if (z<MSAA_depth_buf[get_index(x,y)*4 + i*n + j] && insideTriangle(x+i*size_x, y+j*size_y, t.v)) 
             {
@@ -138,7 +138,6 @@ int rst::rasterizer::MSAA(int x, int y, const Triangle& t, int n, int m, float z
     
     return blocksinTriangle;
 }
-
 
 //Screen space rasterization
 void rst::rasterizer::rasterize_triangle(const Triangle& t) 
@@ -160,6 +159,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t)
         {
             // 扩展作业：MSAA
             int blockinTriangle = 0;
+            // 深度插值,在三角形中的一个像素只有一个深度,因此用像素坐标(x,y)插值深度,比较后采样点深度取这个深度值,代表属于这个三角形,(和颜色类似,一个像素也只能有一个颜色,因此像素在哪个三角形内就取哪个三角形的颜色)因此放在MSAA采样点遍历外
             auto alpha = std::get<0>(computeBarycentric2D(x, y, t.v));
             auto beta = std::get<1>(computeBarycentric2D(x, y, t.v));
             auto gamma = std::get<2>(computeBarycentric2D(x, y, t.v));

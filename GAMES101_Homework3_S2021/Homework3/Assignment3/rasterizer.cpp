@@ -241,11 +241,13 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
     }
 }
 
+// 三维向量插值,用在color上
 static Eigen::Vector3f interpolate(float alpha, float beta, float gamma, const Eigen::Vector3f &vert1, const Eigen::Vector3f &vert2, const Eigen::Vector3f &vert3, float weight)
 {
     return (alpha * vert1 + beta * vert2 + gamma * vert3) / weight;
 }
 
+// 二维向量插值,用在texcoords上
 static Eigen::Vector2f interpolate(float alpha, float beta, float gamma, const Eigen::Vector2f &vert1, const Eigen::Vector2f &vert2, const Eigen::Vector2f &vert3, float weight)
 {
     auto u = (alpha * vert1[0] + beta * vert2[0] + gamma * vert3[0]);
@@ -257,29 +259,52 @@ static Eigen::Vector2f interpolate(float alpha, float beta, float gamma, const E
     return Eigen::Vector2f(u, v);
 }
 
-// Screen space rasterization
 void rst::rasterizer::rasterize_triangle(const Triangle &t, const std::array<Eigen::Vector3f, 3> &view_pos)
 {
-    // TODO: From your HW3, get the triangle rasterization code.
-    // TODO: Inside your rasterization loop:
-    //    * v[i].w() is the vertex view space depth value z.
-    //    * Z is interpolated view space depth for the current pixel
-    //    * zp is depth between zNear and zFar, used for z-buffer
+    auto v = t.toVector4();
+    // get the bounding box of current triangle
+    int minX, minY, maxX, maxY;
+    minX = std::min(v[0].x(), std::min(v[1].x(), v[2].x()));
+    maxX = std::max(v[0].x(), std::max(v[1].x(), v[2].x()));
+    minY = std::min(v[0].y(), std::min(v[1].y(), v[2].y()));
+    maxY = std::max(v[0].y(), std::max(v[1].y(), v[2].y()));
 
-    // float Z = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
-    // float zp = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
-    // zp *= Z;
+    for (int y = minY; y <= maxY; y++)
+    {
+        for (int x = minX; x <= maxX; x++)
+        {
+            if (insideTriangle((float)x + 0.5, (float)y + 0.5, t.v)) // 以像素中心点作为采样点
+            {
+                auto tuple = computeBarycentric2D((float)x + 0.5, (float)y + 0.5, t.v);
+                float alpha = std::get<0>(tuple);
+                float beta = std::get<1>(tuple);
+                float gamma = std::get<2>(tuple);
+                // 深度插值
+                float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+                float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+                z_interpolated *= w_reciprocal;
 
-    // TODO: Interpolate the attributes:
-    // auto interpolated_color
-    // auto interpolated_normal
-    // auto interpolated_texcoords
-    // auto interpolated_shadingcoords
+                if (z_interpolated < depth_buf[get_index(x, y)])
+                {
+                    // 颜色插值
+                    auto interpolated_color = interpolate(alpha, beta, gamma, t.color[0], t.color[1], t.color[2], 1);
+                    // 法向量插值
+                    auto interpolated_normal = interpolate(alpha, beta, gamma, t.normal[0], t.normal[1], t.normal[2], 1);
+                    // 纹理颜色插值
+                    auto interpolated_texcoords = interpolate(alpha, beta, gamma, t.tex_coords[0], t.tex_coords[1], t.tex_coords[2], 1);
+                    // 内部点位置插值
+                    auto interpolated_shadingcoords = interpolate(alpha, beta, gamma, view_pos[0], view_pos[1], view_pos[2], 1);
 
-    // Use: fragment_shader_payload payload( interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);
-    // Use: payload.view_pos = interpolated_shadingcoords;
-    // Use: Instead of passing the triangle's color directly to the frame buffer, pass the color to the shaders first to get the final color;
-    // Use: auto pixel_color = fragment_shader(payload);
+                    fragment_shader_payload payload(interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);
+                    payload.view_pos = interpolated_shadingcoords;
+                    auto pixel_color = fragment_shader(payload);
+
+                    set_pixel(Vector2i(x, y), pixel_color);      // 设置颜色
+                    depth_buf[get_index(x, y)] = z_interpolated; // 写入深度缓存
+                }
+            }
+        }
+    }
 }
 
 void rst::rasterizer::set_model(const Eigen::Matrix4f &m)
@@ -319,7 +344,8 @@ rst::rasterizer::rasterizer(int w, int h) : width(w), height(h)
 {
     frame_buf.resize(w * h);
     depth_buf.resize(w * h);
-
+    MSAA_frame_buf.resize(w * h * 4);
+    MSAA_depth_buf.resize(w * h * 4);
     texture = std::nullopt;
 }
 

@@ -89,6 +89,8 @@ namespace rst
 
         void rasterize_triangle(const Triangle &t, const std::array<Eigen::Vector3f, 3> &world_pos);
 
+        int MSAA(int x, int y, const Triangle &t, int n, int m, const std::array<Eigen::Vector3f, 3> &view_pos);
+
         // VERTEX SHADER -> MVP -> Clipping -> /.W -> VIEWPORT -> DRAWLINE/DRAWTRI -> FRAGSHADER
 
     private:
@@ -112,8 +114,10 @@ namespace rst
 
         // 帧缓冲：一个容器，容器里面存的是3维向量->RGB值，容器的索引即屏幕坐标(w,h)展开的值
         std::vector<Eigen::Vector3f> frame_buf;
+        std::vector<Eigen::Vector3f> MSAA_frame_buf;
         // 深度缓存
         std::vector<float> depth_buf;
+        std::vector<float> MSAA_depth_buf;
         int get_index(int x, int y); // 从二维数组索引展开成一维数组索引
 
         int width, height;

@@ -204,7 +204,7 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
             vec.z() /= vec.w();
         }
 
-        // MV矩阵求逆再转置? -> TODO:why
+        // MV矩阵求逆再转置
         Eigen::Matrix4f inv_trans = (view * model).inverse().transpose();
         // n[] is view space normal of the Vertexs
         Eigen::Vector4f n[] = {
@@ -237,6 +237,7 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
         newtri.setColor(2, 148, 121.0, 92.0);
 
         // Also pass view space vertice position
+        // 传递相机空间的顶点坐标的原因是：在光栅化器中需要插值深度和颜色，深度和颜色都与相机有关。深度是从相机到物体表面的距离，而颜色是指物体表面的颜色，在相机坐标系下，深度和颜色都是相对于相机的位置来计算的，因此需要使用相机坐标系。如果使用世界坐标系或者其他坐标系来计算深度和颜色，那么得到的结果就会有误差，因为这些坐标系与相机坐标系之间存在一个变换关系。因此，为了得到准确的深度和颜色信息，需要使用相机坐标系来进行计算。
         rasterize_triangle(newtri, viewspace_pos);
     }
 }

@@ -7,3 +7,5 @@
     做完了,结果正确
     补全注释，完善代码
     TODO：bump、displacement算法还不懂为啥 -> 现在知识不够解决，以后再补上
+2023.3.25：
+    利用GPT-4理解了法线贴图、切空间、TBN矩阵等知识。理解了bump、displacement算法

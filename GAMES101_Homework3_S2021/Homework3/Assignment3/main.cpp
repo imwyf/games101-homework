@@ -137,7 +137,7 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload &payload)
     float p = 150;
 
     Eigen::Vector3f color = texture_color;
-    Eigen::Vector3f point = payload.view_pos; // shader point -> view space vertex position
+    Eigen::Vector3f point = payload.view_pos; // shader point -> view space coordinate
     Eigen::Vector3f normal = payload.normal;  // 通过三角形顶点法向量插值出来的法向量
 
     Eigen::Vector3f result_color = {0, 0, 0};
@@ -173,7 +173,7 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload &payload)
 
     float p = 150;
 
-    Eigen::Vector3f color = payload.color; // 通过三角形顶点颜色插值出来的颜色
+    Eigen::Vector3f color = payload.color;    // 通过三角形顶点颜色插值出来的颜色
     Eigen::Vector3f point = payload.view_pos; // shader point -> view space vertex position
     Eigen::Vector3f normal = payload.normal;  // 通过三角形顶点法向量插值出来的法向量
 
@@ -238,9 +238,9 @@ Eigen::Vector3f displacement_fragment_shader(const fragment_shader_payload &payl
 
     for (auto &light : lights)
     {
-        auto v = eye_pos - point;        // 出射光方向
-        auto l = light.position - point; // 入射光方向
-        auto r_square = l.dot(l);        // 距离的平方
+        auto v = eye_pos - point;                                // 出射光方向
+        auto l = light.position - point;                         // 入射光方向
+        auto r_square = l.dot(l);                                // 距离的平方
         auto h = (v.normalized() + l.normalized()).normalized(); // 半程向量
         // cwiseProduct:实现两个向量对应分量相乘
         auto ambient = ka.cwiseProduct(amb_light_intensity);                                                                   // 环境光
@@ -273,7 +273,7 @@ Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload &payload)
 
     float kh = 0.2, kn = 0.1;
 
-    // bump_fragment_shader的texture是法线贴图，法线贴图通常是一张RGB纹理图，其中每个像素的RGB值表示该像素的法线方向，因此getcolor就能得到切空间的法线，这个法线是在切空间内预先生成好的，切空间的坐标轴对应关系如下：x轴：切向量，y轴：副切向量，z轴：法向量，因此和着色时所在的世界坐标系不是一个坐标，需要使用TBN矩阵将法线从切空间转换到世界空间
+    // bump_fragment_shader的texture是法线贴图，法线贴图通常是一张RGB纹理图，其中每个像素的RGB值表示该像素的法线方向，因此getcolor就能得到切空间的法线，这个法线是在切空间内预先生成好的，切空间的坐标轴对应关系如下：x轴：切向量，y轴：副切向量，z轴：法向量，因此和着色时所在的坐标系不是一个坐标，需要使用TBN矩阵将法线从切空间转换到世界空间/相机空间
     auto x = normal.x();
     auto y = normal.y();
     auto z = normal.z();
@@ -290,13 +290,14 @@ Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload &payload)
     // dU、dV是U、V方向上的导数
     auto dU = kh * kn * (payload.texture->getColor(u + 1.0f / w, v).norm() - payload.texture->getColor(u, v).norm());
     auto dV = kh * kn * (payload.texture->getColor(u, v + 1.0f / h).norm() - payload.texture->getColor(u, v).norm());
-    Eigen::Vector3f ln(-dU, -dV, 1); // 由两个导数构造的切平面求得扰乱的法线
+    Eigen::Vector3f ln(-dU, -dV, 1);  // 由两个导数构造的切平面求得扰乱的法线
     normal = (TBN * ln).normalized(); // perturbed normal
 
     Eigen::Vector3f result_color = {0, 0, 0};
     result_color = normal;
 
     return result_color * 255.f;
+    // 可以看出来，bump的图是没有光照效果的，只是将法线贴图扰动后直接应用在纹理中，相当于是对normal_fragment_shader的优化，把牛牛表面做成了凹凸不平的样子。
 }
 
 int main(int argc, const char **argv)

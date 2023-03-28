@@ -18,7 +18,7 @@ bool rayTriangleIntersect(const Vector3f &v0, const Vector3f &v1, const Vector3f
     Vector3f s1 = crossProduct(dir, e2);
     Vector3f s2 = crossProduct(s, e1);
 
-    // t表征的是深度，即光线到交点的距离。因此在判断相交时，还要判定到这个物体的深度是否小于到这个格子里其他物体的深度，来确定当格子里有多个物体时，这条光线与哪个物体相交。u,v代表b1,b2，因此实际上代表的是交点的重心坐标
+    // t表征的是深度，即光线到交点的距离。因此在判断相交时，来保证光线碰撞多个物体时，这条光线与那个深度最浅的物体相交。u,v代表b1,b2，因此实际上代表的是交点的重心坐标
     float t = dotProduct(s2, e2) / dotProduct(s1, e1);
     float b1 = dotProduct(s1, s) / dotProduct(s1, e1);
     float b2 = dotProduct(s2, dir) / dotProduct(s1, e1);
@@ -54,6 +54,7 @@ public:
         memcpy(stCoordinates.get(), st, sizeof(Vector2f) * maxIndex);
     }
 
+    // 与三角形相交，Möller Trumbore Algorithm
     bool intersect(const Vector3f &orig, const Vector3f &dir, float &tnear, uint32_t &index,
                    Vector2f &uv) const override
     {
@@ -92,6 +93,7 @@ public:
         st = st0 * (1 - uv.x - uv.y) + st1 * uv.x + st2 * uv.y;
     }
 
+    // 当光线与三角形相交，可以从交点处获得这个点对应的插值出来的纹理坐标，根据这个纹理坐标可以获取纹理贴图上的颜色
     Vector3f evalDiffuseColor(const Vector2f &st) const override
     {
         float scale = 5;
@@ -99,8 +101,8 @@ public:
         return lerp(Vector3f(0.815, 0.235, 0.031), Vector3f(0.937, 0.937, 0.231), pattern);
     }
 
-    std::unique_ptr<Vector3f[]> vertices;
+    std::unique_ptr<Vector3f[]> vertices; // 顶点位置坐标
     uint32_t numTriangles;
-    std::unique_ptr<uint32_t[]> vertexIndex;
-    std::unique_ptr<Vector2f[]> stCoordinates;
+    std::unique_ptr<uint32_t[]> vertexIndex; // 确定索引为几的顶点构成这个三角形
+    std::unique_ptr<Vector2f[]> stCoordinates; // 实际上就是UV纹理坐标
 };

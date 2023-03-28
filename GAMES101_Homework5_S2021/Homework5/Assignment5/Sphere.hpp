@@ -12,6 +12,7 @@ public:
         , radius2(r * r)
     {}
 
+    // 与球相交，联立方程求解t
     bool intersect(const Vector3f& orig, const Vector3f& dir, float& tnear, uint32_t&, Vector2f&) const override
     {
         // analytic solution

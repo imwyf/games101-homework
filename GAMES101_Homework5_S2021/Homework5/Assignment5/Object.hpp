@@ -12,7 +12,7 @@ public:
     }
 
     virtual ~Object() = default;
-    // intersect函数用于检测光线是否与网格模型相交
+    // intersect函数用于检测光线是否与物体相交
     virtual bool intersect(const Vector3f &, const Vector3f &, float &, uint32_t &, Vector2f &) const = 0;
 
     // getSurfaceProperties函数用于获取相交点的表面属性，包括法向量和纹理坐标

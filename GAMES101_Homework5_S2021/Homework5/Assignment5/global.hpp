@@ -13,6 +13,7 @@ inline float clamp(const float& lo, const float& hi, const float& v)
     return std::max(lo, std::min(hi, v));
 }
 
+// solveQuadratic函数用于解二次方程
 inline bool solveQuadratic(const float& a, const float& b, const float& c, float& x0, float& x1)
 {
     float discr = b * b - 4 * a * c;
@@ -31,10 +32,14 @@ inline bool solveQuadratic(const float& a, const float& b, const float& c, float
     return true;
 }
 
+// 物体的三种材质：
 enum MaterialType
 {
+    // 漫反射
     DIFFUSE_AND_GLOSSY,
+    // 透明
     REFLECTION_AND_REFRACTION,
+    // 镜面反射
     REFLECTION
 };
 
@@ -47,6 +52,7 @@ inline float get_random_float()
     return dist(rng);
 }
 
+// UpdateProgress函数用于在控制台输出当前渲染进度条。
 inline void UpdateProgress(float progress)
 {
     int barWidth = 70;

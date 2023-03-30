@@ -28,6 +28,6 @@ public:
     MaterialType materialType; // 材质类型，用于描述物体的表面材质，包括漫反射、镜面反射、透明等。
     float ior;                 // 折射率，用于确定光线进入或离开球体时的弯曲程度
     float Kd, Ks;              // 漫反射系数和镜面反射系数
-    Vector3f diffuseColor;     // 漫反射颜色
+    Vector3f diffuseColor;     // 漫反射颜色,球 -> 没有纹理贴图，因此直接给一个单一的色彩,三角形 -> 有纹理贴图，因此需要通过纹理坐标获得贴图上的颜色
     float specularExponent;    // 镜面反射指数
 };

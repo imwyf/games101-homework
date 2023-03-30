@@ -85,7 +85,7 @@ float fresnel(const Vector3f &I, const Vector3f &N, const float &ior)
 
 // [comment]
 // Returns true if the ray intersects an object, false otherwise.
-//
+// 判断方式：直接遍历场景中每个物体判断与射线是否相交， 球 -> 联立方程，三角形 -> Möller Trumbore Algorithm
 // \param orig is the ray origin
 // \param dir is the ray direction
 // \param objects is the list of objects the scene contains

@@ -21,6 +21,7 @@ public:
     virtual Intersection getIntersection(Ray _ray) = 0;
     virtual void getSurfaceProperties(const Vector3f &, const Vector3f &, const uint32_t &, const Vector2f &, Vector3f &, Vector2f &) const = 0;
     virtual Vector3f evalDiffuseColor(const Vector2f &) const =0;
+    // 每个几何体(球、三角形)都在构建时预先计算好了各自的包围盒
     virtual Bounds3 getBounds()=0;
 };
 

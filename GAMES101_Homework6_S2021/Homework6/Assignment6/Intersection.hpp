@@ -9,6 +9,7 @@
 class Object;
 class Sphere;
 
+// 封装碰撞点的一些信息，如坐标、法向量、碰撞的obj即其材质等
 struct Intersection
 {
     Intersection(){

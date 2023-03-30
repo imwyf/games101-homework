@@ -21,48 +21,54 @@ struct BVHPrimitiveInfo;
 
 // BVHAccel Declarations
 inline int leafNodes, totalLeafNodes, totalPrimitives, interiorNodes;
-class BVHAccel {
+class BVHAccel
+{
 
 public:
     // BVHAccel Public Types
-    enum class SplitMethod { NAIVE, SAH };
+    enum class SplitMethod
+    {
+        NAIVE,
+        SAH
+    };
 
     // BVHAccel Public Methods
-    BVHAccel(std::vector<Object*> p, int maxPrimsInNode = 1, SplitMethod splitMethod = SplitMethod::NAIVE);
+    BVHAccel(std::vector<Object *> p, int maxPrimsInNode = 1, SplitMethod splitMethod = SplitMethod::NAIVE);
     Bounds3 WorldBound() const;
     ~BVHAccel();
 
     Intersection Intersect(const Ray &ray) const;
-    Intersection getIntersection(BVHBuildNode* node, const Ray& ray)const;
+    Intersection getIntersection(BVHBuildNode *node, const Ray &ray) const;
     bool IntersectP(const Ray &ray) const;
-    BVHBuildNode* root;
+    BVHBuildNode *root;
 
     // BVHAccel Private Methods
-    BVHBuildNode* recursiveBuild(std::vector<Object*>objects);
+    BVHBuildNode *recursiveBuild(std::vector<Object *> objects);
 
     // BVHAccel Private Data
-    const int maxPrimsInNode;
-    const SplitMethod splitMethod;
-    std::vector<Object*> primitives;
+    const int maxPrimsInNode;         // 分割到最后，每个节点内最大物体数量
+    const SplitMethod splitMethod;    // 切分方法
+    std::vector<Object *> primitives; // 每个节点内物体集合
 };
 
-struct BVHBuildNode {
+// 一个二叉树结构，每个BVH节点都有左儿子和右儿子，节点内储存的数据是本节点的包围盒边界和在这个包围盒里的物体集合。
+struct BVHBuildNode
+{
     Bounds3 bounds;
     BVHBuildNode *left;
     BVHBuildNode *right;
-    Object* object;
+    Object *object;
 
 public:
-    int splitAxis=0, firstPrimOffset=0, nPrimitives=0;
+    int splitAxis = 0, firstPrimOffset = 0, nPrimitives = 0;
     // BVHBuildNode Public Methods
-    BVHBuildNode(){
+    BVHBuildNode()
+    {
         bounds = Bounds3();
-        left = nullptr;right = nullptr;
+        left = nullptr;
+        right = nullptr;
         object = nullptr;
     }
 };
 
-
-
-
-#endif //RAYTRACING_BVH_H
+#endif // RAYTRACING_BVH_H

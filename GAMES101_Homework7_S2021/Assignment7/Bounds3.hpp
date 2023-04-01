@@ -97,6 +97,41 @@ inline bool Bounds3::IntersectP(const Ray& ray, const Vector3f& invDir,
     // dirIsNeg: ray direction(x,y,z), dirIsNeg=[int(x>0),int(y>0),int(z>0)], use this to simplify your logic
     // TODO test if ray bound intersects
 
+    // 求出光线与三个“对面”的交点
+    float tMin_x = (pMin.x - ray.origin.x) * invDir[0];
+    float tMin_y = (pMin.y - ray.origin.y) * invDir[1];
+    float tMin_z = (pMin.z - ray.origin.z) * invDir[2];
+    float tMax_x = (pMax.x - ray.origin.x) * invDir[0];
+    float tMax_y = (pMax.y - ray.origin.y) * invDir[1];
+    float tMax_z = (pMax.z - ray.origin.z) * invDir[2];
+
+    // 判断光源在pMin一侧还是pMax一侧，这决定了tEnter是用pMin还是pMax来计算
+    // 分三个维度判断
+    if (!dirIsNeg[0])
+    {
+        float t = tMin_x;
+        tMin_x = tMax_x;
+        tMax_x = t;
+    }
+    if (!dirIsNeg[1])
+    {
+        float t = tMin_y;
+        tMin_y = tMax_y;
+        tMax_y = t;
+    }
+    if (!dirIsNeg[2])
+    {
+        float t = tMin_z;
+        tMin_z = tMax_z;
+        tMax_z = t;
+    }
+
+    float tEnter = std::max(tMin_x, std::max(tMin_y, tMin_z));
+    float tExit = std::min(tMax_x, std::min(tMax_y, tMax_z));
+    if (tEnter <= tExit && tExit >= 0)
+        return true;
+    else
+        return false;
 }
 
 inline Bounds3 Union(const Bounds3& b1, const Bounds3& b2)

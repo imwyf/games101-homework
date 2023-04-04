@@ -113,8 +113,12 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
         Ray r(p, wi); // 第二条光线，间接反射
         Intersection inter = intersect(r);
 
-        // 投射光线，将返回的颜色结果作为间接光照
-        L_indir = castRay(r, depth + 1) * m->eval(wo, wi, N) * dotProduct(wi, N) / m->pdf(wo, wi, N) / RussianRoulette;
+        // 判断是否打到的物体是不发光的
+        if (inter.happened && !inter.m->hasEmission())
+        {
+            // 投射光线，将返回的颜色结果作为间接光照
+            L_indir = castRay(r, depth + 1) * m->eval(wo, wi, N) * dotProduct(wi, N) / m->pdf(wo, wi, N) / RussianRoulette;
+        }
     }
     return L_dir + L_indir;
 }
